@@ -92,6 +92,9 @@ def publish():
         restore = OUT / 'RECONSTRUIR_PORTABLE.ps1'
         shutil.copyfile(ROOT / restore.name, restore)
         assets.extend([manifest, restore])
+        launcher = OUT / 'RECONSTRUIR_PORTABLE.bat'
+        shutil.copyfile(ROOT / launcher.name, launcher)
+        assets.append(launcher)
     else:
         assets.append(target)
     releases = api('repos/' + REPO + '/releases')
