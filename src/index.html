@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice Studio by LQTAC</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <img src="../assets/voice-studio-wave-icon.png" alt="Voice Studio" class="brand-logo" />
+          <div>
+            <h1>Voice Studio</h1>
+            <div class="brand-signature">by <img src="../assets/lqtac-wordmark.png" alt="LQTAC" /></div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="ghost-button" id="new-project">Nuevo</button>
+          <button class="ghost-button" id="open-project">Abrir</button>
+          <input class="project-name-input" id="project-name-input" placeholder="Nombre del proyecto" aria-label="Nombre del proyecto" />
+          <button class="ghost-button" id="save-project">Guardar</button>
+          <button class="ghost-button" id="export-project-top" hidden>Exportar proyecto</button>
+          <button class="ghost-button export-top-button" id="export-audio-top">Exportar audio</button>
+          <button class="ghost-button" id="check-runtime">Comprobar runtime</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="sidebar menu-frame">
+          <div class="sidebar-section-title">ESPACIO DE TRABAJO</div>
+          <button class="nav-item active" data-screen="generation"><span>✦</span> Generación de voz</button>
+          <button class="nav-item" data-screen="clone"><span>♬</span> Clonador de voz</button>
+          <button class="nav-item" data-screen="stt"><span>⌁</span> STT / Transcripción</button>
+          <button class="nav-item" data-screen="projects"><span>◫</span> Proyectos</button>
+          <button class="nav-item" data-screen="editor"><span>◒</span> Editor de audio</button>
+          <button class="nav-item" data-screen="settings"><span>⚙</span> Configuración</button>
+          <div class="sidebar-footer">
+            <div class="status-dot"></div>
+            <div>
+              <strong id="runtime-label">Inicializando puente…</strong>
+              <small>Electron + Python local</small>
+            </div>
+          </div>
+        </aside>
+
+        <section class="content tools-frame">
+          <div class="tools-frame-label"><span>HERRAMIENTAS</span><small>Área de trabajo desplazable</small></div>
+          <div class="active-audio-bar" id="active-audio-bar">
+            <div class="active-audio-heading">
+              <span class="active-audio-dot"></span>
+              <div>
+                <strong>Audio activo</strong>
+                <small id="active-audio-name">Genera o abre un audio para comenzar</small>
+              </div>
+            </div>
+            <audio id="audio-player" class="audio-player" controls></audio>
+            <button class="secondary-button" id="active-audio-generation">Generación</button>
+          </div>
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow purple">VOICE WORKSPACE</div>
+              <h2 id="screen-title">Generación de voz</h2>
+              <p id="screen-description">Primera interfaz Electron conectada al runtime local de Voice Studio.</p>
+            </div>
+            <div class="connection-card">
+              <span class="status-dot" id="connection-dot"></span>
+              <span id="connection-label">Comprobando conexión</span>
+            </div>
+          </div>
+
+          <div class="dashboard-grid screen-section" data-screen-section="generation">
+            <section class="panel generator-panel">
+              <div class="panel-heading">
+                <div>
+                  <span class="step-badge">✦</span>
+                  <h3>Texto y motor</h3>
+                </div>
+                <span class="panel-kicker">NÚCLEO PYTHON</span>
+              </div>
+              <label for="engine">Motor de voz</label>
+              <select id="engine">
+                <option>Edge TTS</option>
+                <option>Azure Speech</option>
+                <option>Qwen TTS</option>
+                <option>MeloTTS</option>
+                <option>OpenVoice V2</option>
+                <option>Clonador de voz</option>
+              </select>
+              <label for="voice">Voz Edge</label>
+              <select id="voice">
+                <option value="es-ES-ElviraNeural">es-ES-ElviraNeural</option>
+              </select>
+              <label for="voice-text">Texto</label>
+              <textarea id="voice-text">Bienvenido a la nueva edición Electron de Voice Studio by LQTAC.</textarea>
+              <div class="form-row">
+                <label class="compact-field">Idioma<input value="es-ES" /></label>
+                <label class="compact-field slider-field">Velocidad<input id="motor-rate" type="range" min="-50" max="50" value="0" /><output id="motor-rate-value">+0%</output></label>
+                <label class="compact-field slider-field">Tono<input id="motor-pitch" type="range" min="-100" max="100" value="0" /><output id="motor-pitch-value">+0Hz</output></label>
+                <label class="compact-field slider-field">Volumen<input id="motor-volume" type="range" min="-50" max="50" value="0" /><output id="motor-volume-value">+0%</output></label>
+              </div>
+              <div class="action-row">
+                <button class="primary-button" id="prepare-generation">Generar audio Edge</button>
+                <button class="secondary-button" id="load-voices">Cargar voces</button>
+                <button class="secondary-button" id="clear-text">Limpiar</button>
+              </div>
+            </section>
+
+            <div class="resizer" id="dashboard-resizer" title="Arrastra para cambiar el ancho de los paneles"></div>
+            <section class="panel preview-panel">
+              <div class="panel-heading">
+                <div>
+                  <span class="step-badge muted">✦</span>
+                  <h3>Vista previa</h3>
+                </div>
+                <span class="panel-kicker">SALIDA</span>
+              </div>
+              <div class="empty-preview" id="preview-empty">
+                <div class="wave-icon">∿∿∿</div>
+                <strong>El audio aparecerá aquí</strong>
+                <p>Genera audio para escucharlo aquí y guardarlo como toma del proyecto.</p>
+              </div>
+              <div class="preview-wave-wrap" id="preview-wave-wrap">
+                <div class="preview-wave-head"><span>Forma de onda</span><span id="preview-wave-info">Sin audio</span></div>
+                <canvas id="preview-waveform-canvas" class="preview-waveform-canvas" height="126"></canvas>
+              </div>
+              <div class="preview-actions">
+                <button class="secondary-button" id="preview-edit">Editar audio</button>
+                <button class="secondary-button" id="preview-cut">Cortar selección</button>
+                <button class="secondary-button" id="preview-fusion">Fusionar</button>
+                <button class="secondary-button" id="preview-conversion">Convertir</button>
+                <button class="secondary-button" id="preview-idtag">ID3</button>
+              </div>
+              <button class="secondary-button full-button" id="reveal-output" disabled>Mostrar archivo generado</button>
+              <div class="preview-meta"><span>Formato</span><strong>MP3 / WAV · local</strong></div>
+              <div class="preview-meta"><span>Estado</span><strong id="generation-state">Listo para probar</strong></div>
+            </section>
+          </div>
+
+          <section class="panel clone-panel screen-section" id="clone-panel" data-screen-section="clone" hidden>
+            <div class="panel-heading">
+              <div><span class="step-badge" style="background:#0ea5a8">♬</span><h3>Clonador de voz</h3></div>
+              <span class="panel-kicker">QWEN3 BASE · OPENVOICE V2</span>
+            </div>
+            <div class="clone-layout">
+              <div class="clone-card">
+                <h4>Perfil de voz</h4>
+                <p>Usa las muestras y perfiles locales de Voice Studio by LQTAC o crea uno nuevo con un WAV y su transcripción exacta.</p>
+                <label>Perfil existente<select id="clone-profile"><option value="">Cargando perfiles…</option></select></label>
+                <label>Nombre del perfil<input id="clone-profile-name" placeholder="Ej.: Mi voz" /></label>
+                <label>Idioma<select id="clone-language"><option value="es">Español</option><option value="en">English</option><option value="fr">Français</option><option value="it">Italiano</option><option value="de">Deutsch</option></select></label>
+                <button class="secondary-button" id="clone-select-sample">Usar WAV existente</button>
+                <div class="file-list" id="clone-sample-file">Sin muestra seleccionada.</div>
+                <label>Transcripción exacta del WAV<textarea id="clone-reference-text" class="clone-reference-text" placeholder="Escribe exactamente lo que se dice en la muestra."></textarea></label>
+                <button class="secondary-button full-button" id="clone-save-profile">Guardar perfil local</button>
+              </div>
+              <div class="clone-card">
+                <h4>Generar con la voz clonada</h4>
+                <label>Motor<select id="clone-engine"><option value="qwen">Qwen3 Base</option><option value="openvoice">OpenVoice V2</option></select></label>
+                <label>Texto clonado<textarea id="clone-text">Hola, esta es una prueba de generación con una voz clonada local.</textarea></label>
+                <div class="clone-sliders"><label>Velocidad<input id="clone-rate" type="range" min="-50" max="50" value="0" /><output id="clone-rate-value">+0%</output></label><label>Tono<input id="clone-pitch" type="range" min="-100" max="100" value="0" /><output id="clone-pitch-value">+0Hz</output></label><label>Volumen<input id="clone-volume" type="range" min="-50" max="50" value="0" /><output id="clone-volume-value">+0%</output></label></div>
+                <div class="action-row"><button class="primary-button" id="clone-generate">Generar y cargar audio</button><button class="secondary-button" id="clone-refresh">Actualizar perfiles</button></div>
+                <div class="panel-note" id="clone-status">Los motores Qwen3 Base y OpenVoice V2 se ejecutan en local; la primera generación puede tardar mientras carga el modelo.</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel editor-panel screen-section" data-screen-section="editor" hidden>
+            <div class="panel-heading">
+              <div>
+                <span class="step-badge success">◒</span>
+                <h3>Editor de audio</h3>
+              </div>
+              <span class="panel-kicker">ONDA · RECORTES · EFECTOS</span>
+            </div>
+            <div class="editor-toolbar">
+              <div class="tool-group">
+                <button class="secondary-button active-tool" id="cursor-tool" title="Cursor de posición">↖ Cursor</button>
+                <button class="secondary-button" id="select-tool" title="Arrastra para seleccionar">□ Seleccionar</button>
+                <button class="secondary-button" id="cut-tool" title="Arrastra para marcar un recorte">✂ Recortar</button>
+                <button class="secondary-button" id="clear-selection">Limpiar selección</button>
+              </div>
+              <div class="tool-group">
+                <button class="secondary-button" id="add-cut">Añadir recorte</button>
+                <button class="secondary-button" id="split-audio" title="Divide en el cursor o al final de la selección">Dividir <kbd>S</kbd></button>
+                <button class="secondary-button" id="undo-cut">Deshacer recorte</button>
+                <button class="secondary-button" id="clear-cuts">Limpiar recortes</button>
+              </div>
+            </div>
+            <canvas id="waveform-canvas" class="waveform-canvas" height="220"></canvas>
+            <div class="editor-info"><span id="selection-info">Sin selección</span><span id="cursor-info">Cursor: 00:00.000</span><span id="cuts-info">Sin recortes</span><span id="waveform-info">Sin audio cargado</span></div>
+            <div class="editor-controls">
+              <label class="editor-control">Volumen de edición<input id="edit-volume" type="range" min="-90" max="100" value="0" /><output id="edit-volume-value">+0%</output></label>
+              <button class="secondary-button" id="play-selection">▶ Reproducir selección</button>
+              <button class="primary-button editor-apply" id="apply-edit">Aplicar edición y crear toma</button>
+            </div>
+            <div class="editor-tabs" role="tablist">
+              <button class="editor-tab active" data-editor-tab="effects">FX / Efectos</button>
+              <button class="editor-tab" data-editor-tab="fusion">Fusión</button>
+              <button class="editor-tab" data-editor-tab="conversion">Conversión</button>
+              <button class="editor-tab" data-editor-tab="idtag">IDTAG</button>
+            </div>
+            <div class="editor-tab-panels">
+              <section class="editor-tab-panel active" data-editor-panel="effects">
+                <div class="subpanel-grid">
+                  <div>
+                    <label>Preset FX<select id="effect-preset"><option value="none">Sin efecto</option><option value="radio">Radio / voz telefónica</option><option value="echo">Eco suave</option><option value="robot">Robot</option><option value="bitcrusher">Bitcrusher</option><option value="warm">Voz cálida</option><option value="custom">Personalizado</option></select></label>
+                    <div class="fx-toggle-grid"><label><input type="checkbox" id="fx-radio-enabled" /> Radio</label><label><input type="checkbox" id="fx-echo-enabled" /> Eco</label><label><input type="checkbox" id="fx-robot-enabled" /> Robot</label><label><input type="checkbox" id="fx-crusher-enabled" /> Bitcrusher</label><label><input type="checkbox" id="fx-eq-enabled" /> EQ</label></div>
+                  </div>
+                  <div class="fx-sliders">
+                    <label>Intensidad <input id="fx-intensity" type="range" min="0" max="150" value="100" /><output id="fx-intensity-value">100%</output></label>
+                    <label>Eco / retardo <input id="fx-echo-delay" type="range" min="0" max="1200" value="650" /><output id="fx-echo-delay-value">650ms</output></label>
+                    <label>Bitcrusher <input id="fx-bits" type="range" min="4" max="16" value="8" /><output id="fx-bits-value">8 bits</output></label>
+                    <label>Brillo metálico <input id="fx-metal" type="range" min="-12" max="12" value="0" /><output id="fx-metal-value">+0dB</output></label>
+                  </div>
+                </div>
+                <div class="eq-panel">
+                  <div class="eq-heading"><strong>Ecualizador (EQ)</strong><output id="eq-summary">EQ 0 dB</output></div>
+                  <div class="eq-bands">
+                    <label class="eq-band"><span>60Hz</span><input id="eq-band-60" type="range" min="-12" max="12" value="0" /><output id="eq-band-60-value">0 dB</output></label>
+                    <label class="eq-band"><span>170Hz</span><input id="eq-band-170" type="range" min="-12" max="12" value="0" /><output id="eq-band-170-value">0 dB</output></label>
+                    <label class="eq-band"><span>310Hz</span><input id="eq-band-310" type="range" min="-12" max="12" value="0" /><output id="eq-band-310-value">0 dB</output></label>
+                    <label class="eq-band"><span>600Hz</span><input id="eq-band-600" type="range" min="-12" max="12" value="0" /><output id="eq-band-600-value">0 dB</output></label>
+                    <label class="eq-band"><span>1kHz</span><input id="eq-band-1000" type="range" min="-12" max="12" value="0" /><output id="eq-band-1000-value">0 dB</output></label>
+                    <label class="eq-band"><span>3kHz</span><input id="eq-band-3000" type="range" min="-12" max="12" value="0" /><output id="eq-band-3000-value">0 dB</output></label>
+                    <label class="eq-band"><span>6kHz</span><input id="eq-band-6000" type="range" min="-12" max="12" value="0" /><output id="eq-band-6000-value">0 dB</output></label>
+                    <label class="eq-band"><span>12kHz</span><input id="eq-band-12000" type="range" min="-12" max="12" value="0" /><output id="eq-band-12000-value">0 dB</output></label>
+                  </div>
+                  <div class="eq-footer" id="eq-footer">EQ 0</div>
+                </div>
+                <label class="live-fx-toggle"><input id="live-fx-enabled" type="checkbox" checked /> Escuchar FX en tiempo real <span id="live-fx-status">ACTIVO</span></label>
+                <div class="panel-note" id="fx-summary">FX configurable: selecciona un preset o activa módulos y ajusta sus parámetros.</div>
+              </section>
+              <section class="editor-tab-panel" data-editor-panel="fusion">
+                <div class="utility-grid"><div><h4>Fusión / mezcla</h4><p>Une dos o más audios en el orden elegido.</p><button class="secondary-button" id="fusion-add">Añadir archivos</button><div id="fusion-files" class="file-list">No hay archivos seleccionados.</div></div><div><label>Nombre de salida<input id="fusion-name" value="audio_fusionado" /></label><label>Modo<select id="fusion-mode"><option value="concat">Uno detrás de otro</option><option value="mix">Mezcla simultánea</option></select></label><button class="primary-button" id="fusion-run">Fusionar audios</button></div></div>
+              </section>
+              <section class="editor-tab-panel" data-editor-panel="conversion">
+                <div class="utility-grid"><div><h4>Conversión de audio</h4><p>Convierte el audio activo o selecciona otro archivo.</p><button class="secondary-button" id="conversion-select">Seleccionar archivo</button><div id="conversion-file" class="file-list">Usará el audio activo.</div></div><div><label>Formato<select id="conversion-format"><option value="mp3">MP3 estándar universal 44.1kHz 128kbps stereo</option><option value="wav">WAV estándar universal 44.1kHz 16-bit stereo</option><option value="universal_pack">Pack universal MP3 + WAV estándar</option><option value="mp3_original">MP3 original</option><option value="mp3_mono_96">MP3 24kHz 96kbps mono</option><option value="mp3_48k">MP3 48kHz 192kbps mono</option><option value="wav_8k">WAV PCM 8kHz mono</option><option value="wav_16k">WAV PCM 16kHz mono</option><option value="wav_24k">WAV PCM 24kHz mono</option><option value="ulaw_8k">Asterisk ULAW 8kHz</option><option value="alaw_8k">Asterisk ALAW 8kHz</option><option value="sln_8k">Asterisk SLN 8kHz</option><option value="sln16">Asterisk SLN16 16kHz</option><option value="asterisk_pack">Pack Asterisk</option><option value="mp3_8k">MP3 8kHz 24kbps mono</option></select></label><label>Nombre de salida<input id="conversion-name" value="audio_convertido" /></label><button class="primary-button" id="conversion-run">Convertir audio</button></div></div>
+              </section>
+              <section class="editor-tab-panel" data-editor-panel="idtag">
+                <div class="utility-grid idtag-grid"><div><h4>IDTAG / Metadatos</h4><p>Guarda título, artista, álbum, género, pista, comentario y carátula en el archivo.</p><button class="secondary-button" id="idtag-select">Seleccionar audio</button><div id="idtag-file" class="file-list">Usará el audio activo.</div><div class="cover-preview" id="idtag-cover-preview"><span>Sin carátula</span><img id="idtag-cover-image" alt="Previsualización de carátula" /></div><button class="secondary-button" id="idtag-cover-select">Seleccionar carátula</button><div id="idtag-cover-file" class="file-list">Sin carátula seleccionada.</div></div><div class="tag-fields"><label>Título<input id="tag-title" /></label><label>Artista<input id="tag-artist" /></label><label>Álbum<input id="tag-album" /></label><label>Artista del álbum<input id="tag-album-artist" /></label><label>Género<input id="tag-genre" /></label><label>Fecha<input id="tag-date" /></label><label>Pista<input id="tag-track" /></label><label>Comentario<input id="tag-comment" /></label><button class="primary-button" id="idtag-run">Guardar IDTAG</button></div></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="panel stt-panel screen-section" data-screen-section="stt" hidden>
+            <div class="panel-heading"><div><span class="step-badge" style="background:#0e7490">⌁</span><h3>Transcripción de audio</h3></div><button class="secondary-button" id="stt-refresh">Comprobar motores</button></div>
+            <p class="stt-note">Módulo independiente de Voice Studio. No comparte perfiles, modelos ni proyectos con LQTAC Studio.</p>
+            <div class="stt-grid">
+              <div class="stt-card">
+                <label>Motor<select id="stt-engine"><option value="whispercpp">Whisper.cpp · local</option><option value="fasterwhisper">faster-whisper · local</option></select></label>
+                <label>Idioma<select id="stt-language"><option value="auto">Detectar automáticamente</option><option value="es">Español</option><option value="en">English</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="it">Italiano</option><option value="pt">Português</option></select></label>
+                <label class="live-fx-toggle"><input id="stt-translate" type="checkbox" /> Traducir la salida a inglés <span>OPCIONAL</span></label>
+                <button class="secondary-button full-button" id="stt-select-audio">Seleccionar audio</button>
+                <div class="file-list" id="stt-audio-file">Usará el audio activo o selecciona un archivo.</div>
+              </div>
+              <div class="stt-card">
+                <label id="stt-runtime-label">Ruta de Whisper.cpp<input id="stt-runtime" placeholder="data/stt/bin/Release/whisper-cli.exe" /></label>
+                <button class="secondary-button" id="stt-select-runtime">Seleccionar whisper-cli.exe</button>
+                <label>Modelo local / carpeta<input id="stt-model" placeholder="Ej.: ggml-small.bin o small" /></label>
+                <button class="secondary-button" id="stt-select-model">Seleccionar modelo Whisper.cpp</button>
+                <div class="panel-note" id="stt-runtime-status">Comprobando disponibilidad de los motores independientes…</div>
+              </div>
+            </div>
+            <div class="stt-actions"><button class="primary-button" id="stt-run">Transcribir audio</button><span id="stt-status">Listo para transcribir.</span></div>
+            <label class="stt-times-toggle"><input type="checkbox" id="stt-show-times" /> <span>Mostrar tiempos (se conservan aunque estén ocultos)</span></label>
+            <label>Resultado de la transcripción<textarea id="stt-output" class="stt-output" placeholder="La transcripción aparecerá aquí. Puedes editarla y copiarla."></textarea></label>
+          </section>
+
+          <section class="panel projects-panel screen-section" data-screen-section="projects" hidden>
+            <div class="panel-heading">
+              <div>
+                <span class="step-badge success">◫</span>
+                <h3>Proyectos guardados</h3>
+              </div>
+              <button class="secondary-button" id="projects-refresh">Actualizar</button>
+            </div>
+            <p class="projects-note">Todos los proyectos se guardan localmente junto al programa, dentro de <code>data/projects</code>.</p>
+            <div class="project-list-header" aria-hidden="true"><span>Proyecto</span><span>Duración</span><span>Sistema</span><span>Voz</span><span>Acciones</span></div>
+            <div class="project-list" id="projects-list"></div>
+            <div class="empty-projects" id="projects-empty" hidden>
+              <strong>No hay proyectos guardados</strong>
+              <span>Genera un audio y pulsa Guardar para crear el primer proyecto local.</span>
+            </div>
+          </section>
+
+          <section class="panel settings-panel screen-section" data-screen-section="settings" hidden>
+            <div class="panel-heading"><div><span class="step-badge muted">⚙</span><h3>Configuración</h3></div><span class="panel-kicker">RUNTIME LOCAL</span></div>
+            <div class="settings-grid"><div><h4>Runtime</h4><p>Voice Studio usa Electron, el puente Python local y los modelos incluidos en el portable.</p><div class="settings-value"><span>Estado</span><strong id="settings-runtime-state">Comprobando…</strong></div><div class="settings-value"><span>Origen Python</span><strong id="settings-source-state">—</strong></div><div class="settings-value"><span>Proyectos locales</span><strong id="settings-projects-state">—</strong></div></div><div><h4>Acciones</h4><button class="secondary-button full-button" id="settings-check-runtime">Comprobar runtime</button><button class="secondary-button full-button" id="settings-open-generation">Volver a generación</button></div></div>
+            <div class="migration-panel">
+              <div class="panel-heading"><div><span class="step-badge success">✓</span><h3>Base de migración</h3></div><span class="panel-kicker">FASE 1</span></div>
+              <div class="migration-list"><div><span class="check">✓</span><span>Shell Electron y aislamiento por preload</span></div><div><span class="check">✓</span><span>Logo actualizado integrado en la UI</span></div><div><span class="check">✓</span><span>Puente JSON-lines con Python local</span></div><div><span class="check">✓</span><span>Generación real y proyectos .tacvs conectados</span></div></div>
+            </div>
+          </section>
+        </section>
+      </main>
+      <div class="modal-backdrop" id="project-modal" hidden>
+        <section class="project-modal" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
+          <div class="project-modal-icon" id="project-modal-icon">!</div>
+          <h3 id="project-modal-title">Guardar proyecto</h3>
+          <p id="project-modal-message"></p>
+          <label id="project-modal-name-label">Nombre del proyecto<input id="project-modal-name" type="text" autocomplete="off" /></label>
+          <div class="project-modal-actions">
+            <button class="secondary-button" id="project-modal-cancel">Cancelar</button>
+            <button class="primary-button" id="project-modal-confirm">Guardar</button>
+          </div>
+        </section>
+      </div>
+      <footer class="statusbar"><span id="status-message">Preparando Voice Studio by LQTAC Electron…</span><span id="project-path"></span><span id="source-path"></span></footer>
+    </div>
+    <script src="./transcript-editor.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
