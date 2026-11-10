@@ -105,6 +105,12 @@ def publish():
     existing = {asset['name']:asset for asset in release.get('assets', [])}
     if not release.get('draft'):
         release = api('repos/' + REPO + '/releases/' + str(release['id']), {'draft':True}, 'PATCH')
+    desired = {file.name for file in assets}
+    managed = lambda name: name == target.name or name.startswith(target.name + '.') or name in {'SHA256SUMS.json', 'RECONSTRUIR_PORTABLE.ps1', 'RECONSTRUIR_PORTABLE.bat'}
+    for name, asset in existing.items():
+        if managed(name) and name not in desired:
+            print('Retirando parte obsoleta ' + name, flush=True)
+            api('repos/' + REPO + '/releases/assets/' + str(asset['id']), method='DELETE')
     for file in assets:
         if file.name in existing:
             print('Sustituyendo ' + file.name, flush=True)
