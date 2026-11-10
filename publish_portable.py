@@ -29,7 +29,8 @@ def api(route, payload=None, method=None):
     request.add_header('Content-Type', 'application/json')
     try:
         with urllib.request.urlopen(request, timeout=90) as response:
-            return json.load(response)
+            raw = response.read()
+            return json.loads(raw) if raw else {}
     except urllib.error.HTTPError as error:
         raise RuntimeError(f'GitHub HTTP {error.code}: {route}') from None
 
@@ -102,9 +103,12 @@ def publish():
     if not release:
         release = api('repos/' + REPO + '/releases', {'tag_name':'v0.1.0','name':'Voice Studio by LQTAC - Electron portable v0.1.0','draft':True,'body':'Portable Windows x64 independiente con motores Python y STT incluidos. Sin proyectos, muestras ni perfiles personales. Descarga todos los archivos. Si el ZIP está dividido, descarga las partes .001, .002, etc., SHA256SUMS.json y RECONSTRUIR_PORTABLE.ps1 en una misma carpeta; ejecuta el script y extrae el ZIP completo. No basta con descargar el código fuente. Edge TTS requiere Internet. Los demás motores requieren sus modelos locales. Para clonar, crea tus perfiles de voz.'})
     existing = {asset['name']:asset for asset in release.get('assets', [])}
+    if not release.get('draft'):
+        release = api('repos/' + REPO + '/releases/' + str(release['id']), {'draft':True}, 'PATCH')
     for file in assets:
-        if file.name in existing and existing[file.name]['size'] == file.stat().st_size:
-            print('Ya subido: ' + file.name, flush=True); continue
+        if file.name in existing:
+            print('Sustituyendo ' + file.name, flush=True)
+            api('repos/' + REPO + '/releases/assets/' + str(existing[file.name]['id']), method='DELETE')
         url = urllib.parse.urlsplit(release['upload_url'].split('{')[0] + '?name=' + urllib.parse.quote(file.name))
         connection = http.client.HTTPSConnection(url.hostname, timeout=300)
         connection.putrequest('POST', url.path + '?' + url.query)

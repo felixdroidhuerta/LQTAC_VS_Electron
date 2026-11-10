@@ -23,6 +23,10 @@ SOURCE_ROOT = Path(os.environ.get("LQTAC_SOURCE_ROOT", Path(__file__).resolve().
 OUTPUT_ROOT = Path(os.environ.get("LQTAC_VOICE_OUTPUT_ROOT", Path(__file__).resolve().parents[1] / "data" / "outputs"))
 STT_ROOT = Path(os.environ.get("LQTAC_STT_ROOT", Path(__file__).resolve().parents[1] / "data" / "stt"))
 PROFILES_FILE = SOURCE_ROOT / "config" / "voice_profiles.json"
+QWEN_SPEAKERS = ["serena", "ryan", "dylan", "aiden", "eric", "ono_anna", "sohee", "uncle_fu", "vivian"]
+QWEN_LANGUAGES = ["Auto", "Spanish", "English", "Portuguese", "French", "Italian", "German", "Chinese", "Japanese", "Korean", "Russian"]
+MELO_LANGUAGES = ["Español", "English", "Français", "中文", "日本語", "한국어"]
+MATXA_SPEAKERS = {"balear": ["quim", "olga"], "central": ["grau", "elia"], "nord-occidental": ["pere", "emma"], "valencia": ["lluc", "gina"]}
 
 
 def python_candidates() -> list[Path]:
@@ -46,6 +50,7 @@ def status() -> dict:
             {"id": "azure", "name": "Azure Speech", "state": "ready"},
             {"id": "qwen", "name": "Qwen TTS", "state": "available"},
             {"id": "melo", "name": "MeloTTS", "state": "available"},
+            {"id": "matxa", "name": "Matxa alVoCat CA", "state": "available"},
             {"id": "openvoice", "name": "OpenVoice V2", "state": "available"},
         ],
     }
@@ -463,6 +468,102 @@ def generate_edge(message: dict) -> dict:
     return {"path": str(output_path), "voice": voice, "volume": volume, "bytes": output_path.stat().st_size}
 
 
+def _apply_voice_adjustments(path: Path, message: dict, name: str) -> Path:
+    rate = parse_percent(message.get("rate"), 0.0)
+    pitch = float(str(message.get("pitch") or "0").replace("Hz", "").replace("+", "") or 0)
+    volume = parse_percent(message.get("volume"), 0.0)
+    if abs(rate) < .01 and abs(pitch) < .01 and abs(volume) < .01:
+        return path
+    candidates = [SOURCE_ROOT / "tools" / "sox" / "sox.exe", SOURCE_ROOT / "tools" / "sox" / "sox-14-4-2" / "sox.exe"]
+    sox = next((item for item in candidates if item.exists()), None)
+    if not sox:
+        raise FileNotFoundError("SoX no está disponible para aplicar velocidad, tono y volumen.")
+    result = output_file(name, ".wav")
+    command = [str(sox), str(path), str(result)]
+    if abs(volume) >= .01: command += ["vol", f"{max(0.0, (100 + volume) / 100):.3f}"]
+    if abs(pitch) >= .01: command += ["pitch", str(pitch * 10)]
+    if abs(rate) >= .01: command += ["tempo", f"{max(.5, (100 + rate) / 100):.3f}"]
+    process = subprocess.run(command, capture_output=True, check=False)
+    if process.returncode != 0:
+        raise RuntimeError((process.stderr or b"SoX no pudo aplicar los ajustes.").decode("utf-8", errors="replace").strip())
+    path.unlink(missing_ok=True)
+    return result
+
+
+def generate_voice(message: dict) -> dict:
+    engine = str(message.get("engine") or "edge").lower()
+    if engine == "edge":
+        return generate_edge(message)
+    text = str(message.get("text") or "").strip()
+    if not text:
+        raise ValueError("Escribe un texto antes de generar audio.")
+    OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+    output = OUTPUT_ROOT / f"{safe_output_name(message.get('name') or engine)}_{int(time.time() * 1000)}.wav"
+    if engine == "qwen":
+        python = SOURCE_ROOT / "runtime" / ".venv_qwen" / "Scripts" / "python.exe"
+        script = SOURCE_ROOT / "app" / "qwen_local_generate.py"
+        if not python.exists() or not script.exists():
+            raise FileNotFoundError("Qwen TTS no está instalado en el runtime portable.")
+        command = [str(python), str(script), "--text", text, "--output", str(output), "--speaker", str(message.get("voice") or "serena"), "--language", str(message.get("language") or "Spanish"), "--model", str(message.get("model") or "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice")]
+        if str(message.get("instruct") or "").strip():
+            command += ["--instruct", str(message["instruct"]).strip()]
+    elif engine == "melo":
+        python = SOURCE_ROOT / "runtime" / ".venv_melo" / "Scripts" / "python.exe"
+        script = SOURCE_ROOT / "app" / "melo_local_generate.py"
+        if not python.exists() or not script.exists():
+            raise FileNotFoundError("MeloTTS no está instalado en el runtime portable.")
+        command = [str(python), str(script), "--text", text, "--output", str(output), "--language", str(message.get("language") or "Español"), "--speaker", str(message.get("voice") or "ES"), "--speed", str(max(.5, min(2.0, float(message.get("speed") or 1.0))))]
+    elif engine == "azure":
+        key = str(message.get("key") or os.environ.get("SPEECH_KEY") or os.environ.get("AZURE_SPEECH_KEY") or "").strip()
+        region = str(message.get("region") or os.environ.get("SPEECH_REGION") or os.environ.get("AZURE_SPEECH_REGION") or "").strip()
+        if not key or not region:
+            raise ValueError("Azure Speech necesita la clave y la región.")
+        import azure.cognitiveservices.speech as speechsdk
+        from xml.sax.saxutils import escape
+        voice = str(message.get("voice") or "es-ES-ElviraNeural").strip()
+        config = speechsdk.SpeechConfig(subscription=key, region=region)
+        config.speech_synthesis_voice_name = voice
+        audio = speechsdk.audio.AudioOutputConfig(filename=str(output))
+        synth = speechsdk.SpeechSynthesizer(speech_config=config, audio_config=audio)
+        locale = "-".join(voice.split("-")[:2])
+        ssml = f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="{escape(locale)}"><voice name="{escape(voice)}"><prosody rate="{escape(str(message.get("rate") or "+0%"))}" pitch="{escape(str(message.get("pitch") or "+0Hz"))}" volume="{escape(str(message.get("volume") or "+0%"))}">{escape(text)}</prosody></voice></speak>'
+        result = synth.speak_ssml_async(ssml).get()
+        if result.reason != speechsdk.ResultReason.SynthesizingAudioCompleted:
+            raise RuntimeError(f"Azure Speech no pudo sintetizar: {getattr(result, 'cancellation_details', result.reason)}")
+        return {"path": str(output), "voice": voice, "engine": engine, "bytes": output.stat().st_size}
+    elif engine == "matxa":
+        if len(text) > 500:
+            raise ValueError("Matxa limita el texto a 500 caracteres por generación.")
+        from gradio_client import Client
+        accent = str(message.get("accent") or "balear")
+        speakers = MATXA_SPEAKERS.get(accent)
+        if not speakers:
+            raise ValueError("Acento Matxa no válido.")
+        speaker = str(message.get("voice") or speakers[0])
+        if speaker not in speakers:
+            speaker = speakers[0]
+        client = Client("projecte-aina/matxa-alvocat-tts-ca")
+        try:
+            client.predict(accent, api_name="/rs_change")
+        except Exception:
+            pass
+        result = client.predict(text, accent, speaker, float(message.get("temperature") or .2), float(message.get("length_scale") or .89), api_name="/predict")
+        if isinstance(result, (list, tuple)): result = result[0] if result else None
+        if isinstance(result, dict): result = result.get("path") or result.get("name") or result.get("file")
+        if not result or not Path(str(result)).exists():
+            raise RuntimeError("Matxa no devolvió un audio accesible.")
+        shutil.copyfile(Path(str(result)), output)
+    else:
+        raise ValueError("Motor de voz no válido.")
+    process = subprocess.run(command, cwd=str(SOURCE_ROOT), capture_output=True, text=True, check=False) if engine in ("qwen", "melo") else None
+    if process and process.returncode != 0:
+        raise RuntimeError((process.stderr or process.stdout or f"{engine} falló sin detalle.").strip()[-4000:])
+    if not output.exists() or output.stat().st_size == 0:
+        raise RuntimeError(f"{engine} terminó sin generar audio.")
+    output = _apply_voice_adjustments(output, message, f"{engine}_adjusted")
+    return {"path": str(output), "voice": str(message.get("voice") or ""), "engine": engine, "bytes": output.stat().st_size}
+
+
 def stt_segments(path):
     import re
     raw = path.read_text(encoding='utf-8-sig', errors='replace')
@@ -606,6 +707,8 @@ def handle(message: dict) -> object:
         return list_edge_voices()
     if operation == "edge:generate":
         return generate_edge(message)
+    if operation == "voice:generate":
+        return generate_voice(message)
     if operation == "clone:list_profiles":
         return list_clone_profiles()
     if operation == "clone:save_profile":

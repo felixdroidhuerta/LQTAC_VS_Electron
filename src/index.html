@@ -81,24 +81,19 @@
               </div>
               <label for="engine">Motor de voz</label>
               <select id="engine">
-                <option>Edge TTS</option>
-                <option>Azure Speech</option>
-                <option>Qwen TTS</option>
-                <option>MeloTTS</option>
-                <option>OpenVoice V2</option>
-                <option>Clonador de voz</option>
+                <option value="edge">Edge TTS</option>
+                <option value="azure">Azure Speech</option>
+                <option value="qwen">Qwen TTS</option>
+                <option value="melo">MeloTTS</option>
+                <option value="matxa">Matxa alVoCat CA</option>
               </select>
-              <label for="voice">Voz Edge</label>
-              <select id="voice">
-                <option value="es-ES-ElviraNeural">es-ES-ElviraNeural</option>
-              </select>
+              <div id="engine-fields"></div>
               <label for="voice-text">Texto</label>
               <textarea id="voice-text">Bienvenido a la nueva edición Electron de Voice Studio by LQTAC.</textarea>
-              <div class="form-row">
-                <label class="compact-field">Idioma<input value="es-ES" /></label>
-                <label class="compact-field slider-field">Velocidad<input id="motor-rate" type="range" min="-50" max="50" value="0" /><output id="motor-rate-value">+0%</output></label>
-                <label class="compact-field slider-field">Tono<input id="motor-pitch" type="range" min="-100" max="100" value="0" /><output id="motor-pitch-value">+0Hz</output></label>
-                <label class="compact-field slider-field">Volumen<input id="motor-volume" type="range" min="-50" max="50" value="0" /><output id="motor-volume-value">+0%</output></label>
+              <div class="voice-adjustments">
+                <label class="adjustment-field">Velocidad<div><input id="motor-rate" type="range" min="-50" max="50" value="0" /><input id="motor-rate-value" class="number-control" type="number" min="-50" max="50" value="0" /><span>%</span></div></label>
+                <label class="adjustment-field">Tono<div><input id="motor-pitch" type="range" min="-100" max="100" value="0" /><input id="motor-pitch-value" class="number-control" type="number" min="-100" max="100" value="0" /><span>Hz</span></div></label>
+                <label class="adjustment-field">Volumen<div><input id="motor-volume" type="range" min="-50" max="50" value="0" /><input id="motor-volume-value" class="number-control" type="number" min="-50" max="50" value="0" /><span>%</span></div></label>
               </div>
               <div class="action-row">
                 <button class="primary-button" id="prepare-generation">Generar audio Edge</button>

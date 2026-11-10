@@ -69,6 +69,20 @@ ipcMain.handle('help:manual', async () => {
   const error = await shell.openPath(manual);
   if (error) throw new Error(error);
 });
+ipcMain.handle('app:openExternal', async (_event, requestedUrl) => {
+  const allowed = new Set([
+    'https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices',
+    'https://learn.microsoft.com/azure/ai-services/speech-service/overview'
+  ]);
+  if (!allowed.has(requestedUrl)) throw new Error('Enlace externo no permitido.');
+  await shell.openExternal(requestedUrl);
+  return true;
+});
+ipcMain.handle('azure:environment', () => ({
+  key: process.env.SPEECH_KEY || process.env.AZURE_SPEECH_KEY || '',
+  region: process.env.SPEECH_REGION || process.env.AZURE_SPEECH_REGION || '',
+  voice: process.env.AZURE_SPEECH_VOICE || 'es-ES-ElviraNeural'
+}));
 ipcMain.handle('stt:export', async (_event, data) => {
   const result = await dialog.showSaveDialog(mainWindow, { title: 'Guardar transcripción', defaultPath: 'Transcripción.docx', filters: [{ name: 'Documento Word (.docx)', extensions: ['docx'] }, { name: 'Texto sin formato (.txt)', extensions: ['txt'] }] });
   if (result.canceled) return { canceled: true };
@@ -176,6 +190,10 @@ ipcMain.handle('stt:status', () => bridge.request('stt:status'));
 ipcMain.handle('stt:transcribe', (_event, payload) => bridge.request('stt:transcribe', payload));
 ipcMain.handle('voice:ping', () => bridge.request('ping'));
 ipcMain.handle('voice:listVoices', () => bridge.request('edge:list_voices'));
+ipcMain.handle('voice:generate', async (_event, payload) => {
+  const result = await bridge.request('voice:generate', payload);
+  return { ...result, url: pathToFileURL(result.path).href };
+});
 ipcMain.handle('voice:generateEdge', async (_event, payload) => {
   const result = await bridge.request('edge:generate', payload);
   return { ...result, url: pathToFileURL(result.path).href };
