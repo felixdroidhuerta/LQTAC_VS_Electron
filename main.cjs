@@ -7,7 +7,15 @@ const { pathToFileURL } = require('node:url');
 
 const DEV_SOURCE_ROOT = path.resolve(__dirname, '..', 'LQTAC_VS');
 const PACKAGED_SOURCE_ROOT = path.join(process.resourcesPath || __dirname, 'LQTAC_VS');
-const SOURCE_ROOT = process.env.LQTAC_VOICE_SOURCE_ROOT || (app.isPackaged ? PACKAGED_SOURCE_ROOT : DEV_SOURCE_ROOT);
+const EXECUTABLE_ROOT = path.dirname(process.execPath);
+const sourceCandidates = [
+  process.env.LQTAC_VOICE_SOURCE_ROOT,
+  PACKAGED_SOURCE_ROOT,
+  DEV_SOURCE_ROOT,
+  path.join(EXECUTABLE_ROOT, 'resources', 'LQTAC_VS'),
+  path.join(EXECUTABLE_ROOT, 'LQTAC_VS')
+].filter(Boolean);
+const SOURCE_ROOT = sourceCandidates.find(candidate => fs.existsSync(candidate)) || PACKAGED_SOURCE_ROOT;
 const BRIDGE_SCRIPT = path.join(__dirname, 'backend', 'voice_bridge.py');
 const PROJECTS_ROOT = process.env.LQTAC_VOICE_PROJECTS_ROOT || (app.isPackaged
   ? path.join(path.dirname(process.execPath), 'data', 'projects')
@@ -102,10 +110,13 @@ class PythonBridge {
     const candidates = [
       path.join(SOURCE_ROOT, 'runtime', '.venv', 'Scripts', 'python.exe'),
       path.join(SOURCE_ROOT, 'tools', 'python', 'Python311', 'python.exe'),
-      path.join(SOURCE_ROOT, 'tools', 'python', 'Python312', 'python.exe'),
-      'python'
+      path.join(SOURCE_ROOT, 'tools', 'python', 'Python312', 'python.exe')
     ];
-    return candidates.find(candidate => candidate === 'python' || fs.existsSync(candidate)) || 'python';
+    const executable = candidates.find(candidate => fs.existsSync(candidate));
+    if (!executable) {
+      throw new Error(`No se encuentra el runtime Python portable. Carpeta buscada: ${SOURCE_ROOT}`);
+    }
+    return executable;
   }
 
   start() {
@@ -118,7 +129,8 @@ class PythonBridge {
       : path.join(__dirname, 'data', 'stt'));
     try { fs.mkdirSync(outputRoot, { recursive: true }); } catch (error) { console.warn('No se pudo crear la carpeta de salida portable:', error.message); }
     try { fs.mkdirSync(sttRoot, { recursive: true }); } catch (error) { console.warn('No se pudo crear la carpeta STT portable:', error.message); }
-    this.child = spawn(this.pythonExecutable(), ['-u', BRIDGE_SCRIPT], {
+    const pythonExecutable = this.pythonExecutable();
+    this.child = spawn(pythonExecutable, ['-u', BRIDGE_SCRIPT], {
       cwd: SOURCE_ROOT,
       env: {
         ...process.env,

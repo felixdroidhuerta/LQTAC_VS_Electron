@@ -13,7 +13,11 @@ import urllib.parse
 import shutil
 
 ROOT = Path(__file__).resolve().parent
-PORTABLE = ROOT.parent / 'LQTAC_Voice_Studio_Electron_Portable_v0.1.0'
+PORTABLE_CANDIDATES = [
+    ROOT.parent / 'LQTAC_Voice_Studio_Electron_Portable_v0.1.0',
+    ROOT.parent / 'LQTAC_Voice_Studio_Electron_Portable',
+]
+PORTABLE = next((candidate for candidate in PORTABLE_CANDIDATES if (candidate / 'resources' / 'app' / 'main.cjs').exists() and any(candidate.glob('*.exe'))), PORTABLE_CANDIDATES[0])
 OUT = ROOT.parent / 'LQTAC_VS_Electron_Release_v0.1.0'
 REPO = 'felixdroidhuerta/LQTAC_VS_Electron'
 
