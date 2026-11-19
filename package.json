@@ -6,7 +6,8 @@
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
-    "dev": "electron . --dev"
+    "dev": "electron . --dev",
+    "mcp": "node mcp/server.cjs"
   },
   "devDependencies": {
     "electron": "^38.2.0"

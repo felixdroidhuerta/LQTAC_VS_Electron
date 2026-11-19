@@ -12,8 +12,11 @@ if (-not (Test-Path -LiteralPath (Join-Path $appRoot 'main.cjs'))) {
 foreach ($file in @('main.cjs', 'preload.cjs', 'package.json')) {
     Copy-Item -LiteralPath (Join-Path $projectRoot $file) -Destination $appRoot -Force
 }
-foreach ($directory in @('backend', 'src', 'assets')) {
+foreach ($directory in @('backend', 'src', 'assets', 'mcp')) {
     Copy-Item -LiteralPath (Join-Path $projectRoot $directory) -Destination $appRoot -Recurse -Force
+}
+if (Test-Path -LiteralPath (Join-Path $projectRoot 'VOICE_STUDIO_MCP.cmd')) {
+    Copy-Item -LiteralPath (Join-Path $projectRoot 'VOICE_STUDIO_MCP.cmd') -Destination $portableRoot -Force
 }
 
 $sttSource = Join-Path $projectRoot 'data\stt'

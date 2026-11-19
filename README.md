@@ -1,5 +1,9 @@
 # Voice Studio by LQTAC - Electron
 
+## MCP para Codex y Claude
+
+Incluye `mcp/server.cjs`, un servidor MCP local para descubrir motores, modelos, idiomas y voces; generar pruebas y narraciones; procesar audio; administrar proyectos TACVS y preparar tomas para Cinema Studio. En el portable se inicia mediante `VOICE_STUDIO_MCP.cmd`. Consulta `mcp/CONFIGURACION.md` y `mcp/manual/`.
+
 Repositorio independiente: `felixdroidhuerta/LQTAC_VS_Electron`.
 
 ## Descargar el portable

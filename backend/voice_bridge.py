@@ -29,6 +29,68 @@ MELO_LANGUAGES = ["Español", "English", "Français", "中文", "日本語", "�
 MATXA_SPEAKERS = {"balear": ["quim", "olga"], "central": ["grau", "elia"], "nord-occidental": ["pere", "emma"], "valencia": ["lluc", "gina"]}
 
 
+def voice_catalog(message: dict | None = None) -> dict:
+    message = message or {}
+    requested = str(message.get("engine") or "").strip().lower()
+    include_voices = bool(message.get("include_voices", True))
+    qwen_python = SOURCE_ROOT / "runtime" / ".venv_qwen" / "Scripts" / "python.exe"
+    melo_python = SOURCE_ROOT / "runtime" / ".venv_melo" / "Scripts" / "python.exe"
+    qwen_script = SOURCE_ROOT / "app" / "qwen_local_generate.py"
+    melo_script = SOURCE_ROOT / "app" / "melo_local_generate.py"
+    engines = [
+        {
+            "id": "edge", "name": "Edge TTS", "available": True, "local": False,
+            "requires_internet": True, "languages": [], "voices": [],
+            "limits": {"max_characters": 100000},
+        },
+        {
+            "id": "azure", "name": "Azure Speech", "available": bool(os.environ.get("SPEECH_KEY") or os.environ.get("AZURE_SPEECH_KEY")),
+            "configured": bool((os.environ.get("SPEECH_KEY") or os.environ.get("AZURE_SPEECH_KEY")) and (os.environ.get("SPEECH_REGION") or os.environ.get("AZURE_SPEECH_REGION"))),
+            "local": False, "requires_internet": True,
+            "languages": ["es-ES"], "voices": [os.environ.get("AZURE_SPEECH_VOICE", "es-ES-ElviraNeural")],
+            "limits": {"credentials_required": True},
+        },
+        {
+            "id": "qwen", "name": "Qwen TTS", "available": qwen_python.exists() and qwen_script.exists(), "local": True,
+            "requires_internet": False, "languages": QWEN_LANGUAGES, "voices": QWEN_SPEAKERS,
+            "models": ["Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice", "Qwen/Qwen3-TTS-12Hz-0.6B-Base"],
+        },
+        {
+            "id": "melo", "name": "MeloTTS", "available": melo_python.exists() and melo_script.exists(), "local": True,
+            "requires_internet": False, "languages": MELO_LANGUAGES, "voices": ["ES", "EN", "FR", "ZH", "JP", "KR"],
+            "limits": {"model_speed_min": 0.5, "model_speed_max": 2.0},
+        },
+        {
+            "id": "matxa", "name": "Matxa alVoCat CA", "available": True, "local": False, "requires_internet": True,
+            "languages": ["Català"], "accents": MATXA_SPEAKERS,
+            "voices": sorted({voice for voices in MATXA_SPEAKERS.values() for voice in voices}),
+            "limits": {"max_characters": 500},
+        },
+        {
+            "id": "clone", "name": "Clonador de voz", "available": qwen_python.exists() or melo_python.exists(), "local": True,
+            "requires_internet": False, "engines": ["qwen", "openvoice"],
+            "profiles": [item.get("name") for item in list_clone_profiles()],
+        },
+    ]
+    if include_voices and (not requested or requested == "edge"):
+        try:
+            edge_voices = list_edge_voices()
+            edge = next(item for item in engines if item["id"] == "edge")
+            edge["voices"] = edge_voices
+            edge["languages"] = sorted({item.get("locale") for item in edge_voices if item.get("locale")})
+        except Exception as error:
+            edge = next(item for item in engines if item["id"] == "edge")
+            edge["catalog_error"] = str(error)
+    if requested:
+        engines = [item for item in engines if item["id"] == requested]
+    return {
+        "engines": engines,
+        "output_profiles": ["mp3", "wav", "mp3_mono_96", "mp3_8k", "wav_8k", "wav_16k", "wav_24k", "ulaw_8k", "alaw_8k", "sln_8k", "sln16", "universal_pack", "asterisk_pack"],
+        "adjustments": {"rate": [-50, 50], "pitch_hz": [-100, 100], "volume": [-50, 50]},
+        "source_root": str(SOURCE_ROOT),
+    }
+
+
 def python_candidates() -> list[Path]:
     return [
         SOURCE_ROOT / "runtime" / ".venv" / "Scripts" / "python.exe",
@@ -699,6 +761,8 @@ def handle(message: dict) -> object:
         return {"pong": True, "python": sys.executable}
     if operation == "status":
         return status()
+    if operation == "voice:catalog":
+        return voice_catalog(message)
     if operation == "stt:status":
         return stt_status()
     if operation == "stt:transcribe":
