@@ -196,6 +196,29 @@ class PythonBridge {
 }
 
 const bridge = new PythonBridge();
+const mcpClients = require('./mcp/clients.cjs');
+const mcpCommand = () => {
+  if (app.isPackaged) return process.execPath;
+  const stable = path.join(__dirname, 'node_modules', 'electron', 'dist', 'electron.exe');
+  return fs.existsSync(stable) ? stable : process.execPath;
+};
+async function mcpConfiguration() {
+  const config = mcpClients.clients(mcpCommand());
+  const directory = path.join(path.dirname(PROJECTS_ROOT), 'mcp', 'clients');
+  fs.mkdirSync(directory, { recursive: true });
+  const saved = { json: path.join(directory, 'mcp-client.json'), codex: path.join(directory, 'codex-config.toml'), claude: path.join(directory, 'claude-code.txt') };
+  fs.writeFileSync(saved.json, JSON.stringify(config.configuration, null, 2));
+  fs.writeFileSync(saved.codex, config.codex);
+  fs.writeFileSync(saved.claude, config.claudeCommand + '\n');
+  return { ...config, saved, files: { claude: mcpClients.files.claude(), codex: mcpClients.files.codex() }, status: await mcpClients.status(mcpCommand()) };
+}
+
+ipcMain.handle('mcp:config', () => mcpConfiguration());
+ipcMain.handle('mcp:install', async (_event, target) => {
+  if (!['claude', 'codex'].includes(target)) throw new Error('Cliente MCP no válido.');
+  const file = await mcpClients.install(target, mcpCommand());
+  return { file, status: await mcpClients.status(mcpCommand()) };
+});
 
 ipcMain.handle('voice:status', () => bridge.request('status'));
 ipcMain.handle('stt:status', () => bridge.request('stt:status'));

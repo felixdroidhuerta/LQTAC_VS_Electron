@@ -282,7 +282,10 @@
 
           <section class="panel settings-panel screen-section" data-screen-section="settings" hidden>
             <div class="panel-heading"><div><span class="step-badge muted">⚙</span><h3>Configuración</h3></div><span class="panel-kicker">RUNTIME LOCAL</span></div>
-            <div class="settings-grid"><div><h4>Runtime</h4><p>Voice Studio usa Electron, el puente Python local y los modelos incluidos en el portable.</p><div class="settings-value"><span>Estado</span><strong id="settings-runtime-state">Comprobando…</strong></div><div class="settings-value"><span>Origen Python</span><strong id="settings-source-state">—</strong></div><div class="settings-value"><span>Proyectos locales</span><strong id="settings-projects-state">—</strong></div></div><div><h4>Acciones</h4><button class="secondary-button full-button" id="settings-check-runtime">Comprobar runtime</button><button class="secondary-button full-button" id="settings-open-generation">Volver a generación</button></div></div>
+            <div class="settings-grid">
+              <div><h4>Runtime</h4><p>Voice Studio usa Electron, el puente Python local y los modelos incluidos en el portable.</p><div class="settings-value"><span>Estado</span><strong id="settings-runtime-state">Comprobando…</strong></div><div class="settings-value"><span>Origen Python</span><strong id="settings-source-state">—</strong></div><div class="settings-value"><span>Proyectos locales</span><strong id="settings-projects-state">—</strong></div></div>
+              <div><h4>Acciones</h4><button class="secondary-button full-button" id="settings-check-runtime">Comprobar runtime</button><button class="primary-button full-button" id="settings-mcp-open">Configurar conexión MCP</button><button class="secondary-button full-button" id="settings-open-generation">Volver a generación</button></div>
+            </div>
             <div class="migration-panel">
               <div class="panel-heading"><div><span class="step-badge success">✓</span><h3>Base de migración</h3></div><span class="panel-kicker">FASE 1</span></div>
               <div class="migration-list"><div><span class="check">✓</span><span>Shell Electron y aislamiento por preload</span></div><div><span class="check">✓</span><span>Logo actualizado integrado en la UI</span></div><div><span class="check">✓</span><span>Puente JSON-lines con Python local</span></div><div><span class="check">✓</span><span>Generación real y proyectos .tacvs conectados</span></div></div>
@@ -290,6 +293,16 @@
           </section>
         </section>
       </main>
+      <dialog id="mcp-dialog" class="mcp-dialog">
+        <div class="panel-heading"><div><span class="step-badge" style="background:#0e7490">MCP</span><h3>Conexión MCP</h3></div><span class="panel-kicker">CODEX · CLAUDE</span></div>
+        <p>Permite que Codex, Claude u otro cliente MCP consulte motores y voces, genere narraciones, procese audio y prepare tomas para Cinema Studio. Voice Studio no necesita estar abierto mientras se utiliza el MCP.</p>
+        <div class="mcp-status"><span>Claude Code <b id="mcp-claude-state">Comprobando…</b></span><span>Codex <b id="mcp-codex-state">Comprobando…</b></span></div>
+        <label>Configuración para<select id="mcp-client"><option value="claude">Claude Code (comando)</option><option value="claudeJson">Claude Desktop / .mcp.json (JSON)</option><option value="codex">Codex (config.toml)</option><option value="json">Otros clientes MCP (JSON)</option></select></label>
+        <textarea id="mcp-configuration" readonly spellcheck="false"></textarea>
+        <p id="mcp-config-path" class="mcp-path"></p>
+        <p id="mcp-message" class="mcp-message" role="status"></p>
+        <div class="mcp-actions"><button type="button" class="primary-button" id="mcp-install"></button><button type="button" class="secondary-button" id="mcp-copy">Copiar configuración</button><button type="button" class="secondary-button" id="mcp-close">Cerrar</button></div>
+      </dialog>
       <div class="modal-backdrop" id="project-modal" hidden>
         <section class="project-modal" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
           <div class="project-modal-icon" id="project-modal-icon">!</div>

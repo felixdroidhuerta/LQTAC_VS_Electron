@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('voiceStudio', Object.freeze({
   openManual: () => ipcRenderer.invoke('help:manual'),
   openExternal: url => ipcRenderer.invoke('app:openExternal', url),
   getAzureCredentials: () => ipcRenderer.invoke('azure:environment'),
+  getMcpConfig: () => ipcRenderer.invoke('mcp:config'),
+  installMcp: target => ipcRenderer.invoke('mcp:install', target),
   getStatus: () => ipcRenderer.invoke('voice:status'),
   getSttStatus: () => ipcRenderer.invoke('stt:status'),
   transcribe: payload => ipcRenderer.invoke('stt:transcribe', payload),

@@ -236,6 +236,15 @@ select:focus, textarea:focus, input:focus { border-color: var(--purple-2); box-s
 .settings-grid p { margin-bottom: 16px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .settings-value { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid rgba(87, 108, 155, .18); color: var(--muted); font-size: 12px; }
 .settings-value strong { max-width: 68%; overflow: hidden; color: #dbe6ff; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.mcp-dialog { width: min(820px, calc(100vw - 48px)); max-height: calc(100vh - 48px); padding: 24px; border: 1px solid #31476e; border-radius: 16px; color: var(--text); background: linear-gradient(145deg, #121d33, #0a1120); box-shadow: 0 28px 80px #000b; }
+.mcp-dialog::backdrop { background: rgba(1, 6, 16, .78); backdrop-filter: blur(3px); }
+.mcp-dialog > p { color: var(--muted); font-size: 13px; line-height: 1.55; }
+.mcp-dialog textarea { min-height: 230px; font-family: Consolas, monospace; font-size: 12px; white-space: pre; }
+.mcp-status { display: flex; gap: 12px; margin: 16px 0; }
+.mcp-status span { flex: 1; display: flex; justify-content: space-between; gap: 12px; padding: 11px 13px; border: 1px solid #2b3c60; border-radius: 9px; background: #080f20; color: #b8c7e3; font-size: 12px; }
+.mcp-status b.ok { color: var(--green); }.mcp-status b.warn { color: #f0b45a; }.mcp-status b.off { color: #8998b3; }
+.mcp-path { overflow-wrap: anywhere; }.mcp-message { min-height: 20px; color: var(--cyan) !important; }
+.mcp-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
 .migration-panel { margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(87, 108, 155, .22); }
 .migration-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 22px; color: #bac8e1; font-size: 13px; }
 .migration-list > div { display: flex; align-items: center; gap: 9px; }

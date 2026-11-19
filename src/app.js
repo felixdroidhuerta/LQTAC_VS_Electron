@@ -226,6 +226,46 @@ $('#reveal-output').addEventListener('click', () => { if (currentAudioPath) wind
 $('#check-runtime').addEventListener('click', refreshRuntime);
 $('#settings-check-runtime').addEventListener('click', refreshRuntime);
 $('#settings-open-generation').addEventListener('click', () => showScreen('generation'));
+const mcpDialog = $('#mcp-dialog');
+const mcpClient = $('#mcp-client');
+const mcpText = $('#mcp-configuration');
+const mcpMessage = $('#mcp-message');
+const mcpInstall = $('#mcp-install');
+let mcpConfig = null;
+const mcpStates = { ok: ['Registrado', 'ok'], different: ['Registrado con otras rutas', 'warn'], missing: ['No registrado', 'off'], 'no-client': ['No encontrado en este equipo', 'off'] };
+function showMcpStatus() {
+  for (const [key, selector] of [['claude', '#mcp-claude-state'], ['codex', '#mcp-codex-state']]) {
+    const element = $(selector), [label, className] = mcpStates[mcpConfig?.status?.[key]] || mcpStates.missing;
+    element.textContent = label; element.className = className;
+  }
+}
+function showMcpConfiguration() {
+  if (!mcpConfig) return;
+  const value = mcpClient.value;
+  mcpText.value = value === 'claude' ? `${mcpConfig.claudeCommand}\n\n# Después, en Claude Code: /mcp para comprobar la conexión.` : value === 'claudeJson' ? JSON.stringify(mcpConfig.claudeJson, null, 2) : value === 'codex' ? mcpConfig.codex : JSON.stringify(mcpConfig.configuration, null, 2);
+  $('#mcp-config-path').textContent = `Guardado también en ${value === 'codex' ? mcpConfig.saved.codex : value === 'claude' ? mcpConfig.saved.claude : mcpConfig.saved.json}`;
+  const target = value === 'claude' ? 'claude' : value === 'codex' ? 'codex' : null;
+  mcpInstall.hidden = !target;
+  if (target) {
+    const state = mcpConfig.status[target]; mcpInstall.dataset.target = target;
+    mcpInstall.textContent = `${state === 'ok' ? 'Volver a registrar en ' : state === 'different' ? 'Actualizar en ' : 'Registrar en '}${target === 'claude' ? 'Claude Code' : 'Codex'}`;
+  }
+}
+async function openMcpConfiguration() {
+  mcpMessage.textContent = '';
+  try { mcpConfig = await window.voiceStudio.getMcpConfig(); showMcpStatus(); showMcpConfiguration(); mcpDialog.showModal(); }
+  catch (error) { setStatus(`No se pudo preparar la configuración MCP: ${error.message}`); }
+}
+$('#settings-mcp-open').addEventListener('click', openMcpConfiguration);
+mcpClient.addEventListener('change', () => { mcpMessage.textContent = ''; showMcpConfiguration(); });
+mcpInstall.addEventListener('click', async () => {
+  const target = mcpInstall.dataset.target, name = target === 'claude' ? 'Claude Code' : 'Codex'; mcpInstall.disabled = true;
+  try { const result = await window.voiceStudio.installMcp(target); mcpConfig.status = result.status; showMcpStatus(); showMcpConfiguration(); mcpMessage.textContent = `Registrado en ${result.file}. Se ha conservado una copia .bak-voicestudio. Abre una sesión nueva de ${name}.`; }
+  catch (error) { mcpMessage.textContent = `No se pudo registrar: ${error.message}`; }
+  finally { mcpInstall.disabled = false; }
+});
+$('#mcp-copy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(mcpText.value); } catch (_) { mcpText.select(); document.execCommand('copy'); } mcpMessage.textContent = 'Configuración copiada.'; });
+$('#mcp-close').addEventListener('click', () => mcpDialog.close());
 $('#active-audio-generation').addEventListener('click', () => showScreen('generation'));
 $('#projects-refresh').addEventListener('click', refreshProjects);
 $('#stt-refresh').addEventListener('click', refreshSttStatus);
