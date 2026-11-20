@@ -2,7 +2,7 @@
 
 ## MCP para Codex y Claude
 
-Incluye `mcp/server.cjs`, un servidor MCP local para descubrir motores, modelos, idiomas y voces; generar pruebas y narraciones; procesar audio; administrar proyectos TACVS y preparar tomas para Cinema Studio. En el portable se inicia mediante `VOICE_STUDIO_MCP.cmd`. Consulta `mcp/CONFIGURACION.md` y `mcp/manual/`.
+Incluye `mcp/server.cjs`, un servidor MCP local para descubrir motores, modelos, idiomas y voces; generar pruebas y narraciones; procesar audio; administrar proyectos TACVS y preparar tomas para Cinema Studio. En el portable se registra desde **Ajustes → Configurar conexión MCP** o con `claude mcp add` / `config.toml`. Consulta `mcp/CONFIGURACION.md` (incluye el caso de rutas con espacio de no separación) y `mcp/manual/`.
 
 Repositorio independiente: `felixdroidhuerta/LQTAC_VS_Electron`.
 

@@ -20,3 +20,7 @@ Consulta su duración real. Ajusta velocidad dentro de valores moderados o refor
 
 Usa siempre la ruta absoluta `audio_path` devuelta por Voice Studio. Importa el archivo antes de insertarlo en una pista.
 
+
+## El cliente no conecta con el servidor MCP
+
+Si `/mcp` muestra `voice-studio` como fallido o *connection closed*, casi siempre es la ruta del EXE o de `server.cjs`. Comprueba que ambas existen con `Test-Path -LiteralPath`. Si el nombre de usuario de Windows contiene un espacio de no separación (U+00A0), una ruta escrita o pegada a mano no coincide con la real: regístralo desde **Ajustes → Configurar conexión MCP** o sigue `mcp/CONFIGURACION.md`. Tras cualquier cambio, abre una sesión nueva del cliente.
