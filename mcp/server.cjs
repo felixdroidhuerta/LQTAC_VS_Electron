@@ -7,6 +7,7 @@ const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
 
 const APP_ROOT = path.resolve(__dirname, '..');
+const APP_VERSION = (() => { try { return JSON.parse(fs.readFileSync(path.join(APP_ROOT, 'package.json'), 'utf8')).version || '0.0.0'; } catch (_) { return '0.0.0'; } })();
 const EXECUTABLE_ROOT = path.dirname(process.execPath);
 const SOURCE_CANDIDATES = [
   process.env.LQTAC_VOICE_SOURCE_ROOT,
@@ -257,7 +258,7 @@ function promptMessages(args) {
 
 async function handle(message) {
   const method = message.method;
-  if (method === 'initialize') return { protocolVersion: message.params?.protocolVersion || '2025-06-18', capabilities: { tools: { listChanged: false }, resources: { subscribe: false, listChanged: false }, prompts: { listChanged: false } }, serverInfo: { name: 'voice-studio-mcp', version: '0.1.0', title: 'Voice Studio by LQTAC' }, instructions: 'Consulta voice_catalog antes de generar. Usa los manuales MCP para coordinar narraciones con Cinema Studio.' };
+  if (method === 'initialize') return { protocolVersion: message.params?.protocolVersion || '2025-06-18', capabilities: { tools: { listChanged: false }, resources: { subscribe: false, listChanged: false }, prompts: { listChanged: false } }, serverInfo: { name: 'voice-studio-mcp', version: APP_VERSION, title: 'Voice Studio by LQTAC' }, instructions: 'Consulta voice_catalog antes de generar. Usa los manuales MCP para coordinar narraciones con Cinema Studio.' };
   if (method === 'ping') return {};
   if (method === 'tools/list') return { tools };
   if (method === 'tools/call') return callTool(message.params?.name, message.params?.arguments || {});
