@@ -13,12 +13,15 @@ import urllib.parse
 import shutil
 
 ROOT = Path(__file__).resolve().parent
+VERSION = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))['version']
+TAG = 'v' + VERSION
+ZIP_NAME = f'Voice_Studio_by_LQTAC_Electron_{TAG}.zip'
 PORTABLE_CANDIDATES = [
     ROOT.parent / 'LQTAC_Voice_Studio_Electron_Portable_v0.1.0',
     ROOT.parent / 'LQTAC_Voice_Studio_Electron_Portable',
 ]
 PORTABLE = next((candidate for candidate in PORTABLE_CANDIDATES if (candidate / 'resources' / 'app' / 'main.cjs').exists() and any(candidate.glob('*.exe'))), PORTABLE_CANDIDATES[0])
-OUT = ROOT.parent / 'LQTAC_VS_Electron_Release_v0.1.0'
+OUT = ROOT.parent / f'LQTAC_VS_Electron_Release_{TAG}'
 REPO = 'felixdroidhuerta/LQTAC_VS_Electron'
 
 def token():
@@ -49,7 +52,7 @@ def safe(relative):
 
 def prepare():
     OUT.mkdir(exist_ok=True)
-    target = OUT / 'Voice_Studio_by_LQTAC_Electron_v0.1.0.zip'
+    target = OUT / ZIP_NAME
     if target.exists(): raise RuntimeError('El archivo de distribución ya existe. No se sobrescribe.')
     files = sorted(p for p in PORTABLE.rglob('*') if p.is_file() and not p.is_symlink() and safe(p.relative_to(PORTABLE)))
     print(f'Empaquetando {len(files)} archivos, sin proyectos, audios personales ni muestras de voz.', flush=True)
@@ -75,7 +78,7 @@ def digest(file):
     return result.hexdigest()
 
 def publish():
-    target = OUT / 'Voice_Studio_by_LQTAC_Electron_v0.1.0.zip'
+    target = OUT / ZIP_NAME
     if not target.exists(): raise RuntimeError('Primero prepara el ZIP.')
     assets = []
     if target.stat().st_size > 1900 * 1024 * 1024:
@@ -103,9 +106,9 @@ def publish():
     else:
         assets.append(target)
     releases = api('repos/' + REPO + '/releases')
-    release = next((r for r in releases if r['tag_name'] == 'v0.1.0'), None)
+    release = next((r for r in releases if r['tag_name'] == TAG), None)
     if not release:
-        release = api('repos/' + REPO + '/releases', {'tag_name':'v0.1.0','name':'Voice Studio by LQTAC - Electron portable v0.1.0','draft':True,'body':'Portable Windows x64 independiente con motores Python y STT incluidos. Sin proyectos, muestras ni perfiles personales. Descarga todos los archivos. Si el ZIP está dividido, descarga las partes .001, .002, etc., SHA256SUMS.json y RECONSTRUIR_PORTABLE.ps1 en una misma carpeta; ejecuta el script y extrae el ZIP completo. No basta con descargar el código fuente. Edge TTS requiere Internet. Los demás motores requieren sus modelos locales. Para clonar, crea tus perfiles de voz.'})
+        release = api('repos/' + REPO + '/releases', {'tag_name':TAG,'target_commitish':os.environ.get('RELEASE_TARGET', 'main'),'name':'Voice Studio by LQTAC - Electron portable ' + TAG,'draft':True,'body':'Portable Windows x64 independiente con motores Python y STT incluidos. Sin proyectos, muestras ni perfiles personales. Descarga todos los archivos. Si el ZIP está dividido, descarga las partes .001, .002, etc., SHA256SUMS.json y RECONSTRUIR_PORTABLE.ps1 en una misma carpeta; ejecuta el script y extrae el ZIP completo. No basta con descargar el código fuente. Edge TTS requiere Internet. Los demás motores requieren sus modelos locales. Para clonar, crea tus perfiles de voz.'})
     existing = {asset['name']:asset for asset in release.get('assets', [])}
     if not release.get('draft'):
         release = api('repos/' + REPO + '/releases/' + str(release['id']), {'draft':True}, 'PATCH')
