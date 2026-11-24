@@ -13,6 +13,9 @@ import urllib.parse
 import shutil
 
 ROOT = Path(__file__).resolve().parent
+VERSION = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))['version']
+TAG = 'v' + VERSION
+ZIP_NAME = f'Voice_Studio_by_LQTAC_Electron_{TAG}.zip'
 PORTABLE_CANDIDATES = [
     ROOT.parent / 'LQTAC_Voice_Studio_Electron_Portable_v0.1.0',
     ROOT.parent / 'LQTAC_Voice_Studio_Electron_Portable',
@@ -20,9 +23,6 @@ PORTABLE_CANDIDATES = [
 PORTABLE = next((candidate for candidate in PORTABLE_CANDIDATES if (candidate / 'resources' / 'app' / 'main.cjs').exists() and any(candidate.glob('*.exe'))), PORTABLE_CANDIDATES[0])
 OUT = ROOT.parent / f'LQTAC_VS_Electron_Release_{TAG}'
 REPO = 'felixdroidhuerta/LQTAC_VS_Electron'
-VERSION = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))['version']
-TAG = 'v' + VERSION
-ZIP_NAME = f'Voice_Studio_by_LQTAC_Electron_{TAG}.zip'
 
 def token():
     result = subprocess.run(['git', 'credential', 'fill'], input='protocol=https\nhost=github.com\n\n', capture_output=True, text=True, check=True)
